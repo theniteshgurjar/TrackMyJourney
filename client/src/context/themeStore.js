@@ -1,17 +1,19 @@
 import { create } from 'zustand';
 
 const useThemeStore = create((set) => ({
-  theme: 'dark',
-  isDarkMode: true,
+  theme: 'light',
+  isDarkMode: false,
   toggleTheme: () => {
-    // Disabled toggle since we only want dark mode
-    document.documentElement.classList.add('dark');
+    // Keep clean light mode as requested by user
+    document.documentElement.classList.remove('dark');
+    set({ theme: 'light', isDarkMode: false });
   },
   initTheme: () => {
-    localStorage.setItem('theme', 'dark');
-    document.documentElement.classList.add('dark');
-    set({ theme: 'dark', isDarkMode: true });
+    localStorage.setItem('theme', 'light');
+    document.documentElement.classList.remove('dark');
+    set({ theme: 'light', isDarkMode: false });
   }
 }));
 
 export default useThemeStore;
+

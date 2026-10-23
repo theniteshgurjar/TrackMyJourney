@@ -1,46 +1,42 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
-@custom-variant dark (&:is(.dark *));
-
 :root {
-  /* TrackMyJourney Premium Identity Palette */
-  --primary: #8B5CF6; /* Electric Violet */
-  --primary-hover: #7C3AED;
-  --secondary: #F59E0B; /* Amber */
-  --accent: #F43F5E; /* Rose */
+  /* Reference Mockup Palette - Deep Navy, Slate & Clean Whites (No Red) */
+  --primary: #234289; /* Deep Navy Royal Blue from Reference */
+  --primary-hover: #1A336B;
+  --primary-dark: #0F172A;
+  --primary-light: #EFF4FC;
+  --primary-border: #D5E2F6;
   
-  /* Ultra Premium Dark Theme (Default & Only) */
-  --background: #0B1120; /* Midnight Blue */
-  --text-dark: #F8FAFC;
-  --text-light: #94A3B8;
-  --card-bg: rgba(17, 24, 39, 0.85); /* Slate 900 translucent */
-  --border-color: rgba(51, 65, 85, 0.6);
-}
-
-.dark {
-  /* Kept for tailwind class compatibility, but root is already dark */
-  --background: #0B1120;
-  --text-dark: #F8FAFC;
-  --text-light: #94A3B8;
-  --card-bg: rgba(17, 24, 39, 0.85);
-  --border-color: rgba(51, 65, 85, 0.6);
+  --secondary: #0F172A; /* Slate 900 */
+  --accent: #2563EB; /* Vibrant Royal */
+  --success: #10B981; /* Emerald */
+  --warning: #F59E0B; /* Amber */
+  
+  /* Light Mode Foundation - Soft Cool Canvas from Reference */
+  --background: #EEF2F6;
+  --surface: #FFFFFF;
+  --surface-secondary: #F8FAFC;
+  --text-main: #0B132B; /* Dark Blue-Slate */
+  --text-body: #334155; /* Slate 700 */
+  --text-muted: #64748B; /* Slate 500 */
+  --border-color: #E2E8F0; /* Slate 200 */
+  --border-strong: #CBD5E1; /* Slate 300 */
 }
 
 body {
   background-color: var(--background);
-  color: var(--text-dark);
-  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  color: var(--text-main);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  /* Subtle pattern for the background */
-  background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
-  background-size: 24px 24px;
+  min-height: 100vh;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  letter-spacing: -0.02em;
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -0.025em;
+  font-weight: 800;
 }
 
 @theme {
@@ -49,51 +45,92 @@ h1, h2, h3, h4, h5, h6 {
   --color-secondary: var(--secondary);
   --color-accent: var(--accent);
   
-  --font-sans: 'DM Sans', system-ui, sans-serif;
-  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-/* Unique Brand Card Utilities */
+/* Master Cards & Buttons */
 @layer utilities {
-  .brand-card {
-    background: var(--card-bg);
-    border-radius: 16px; /* softer rounded corners */
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
-    border: 1px solid var(--border-color);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+  .master-card {
+    background: #FFFFFF;
+    border-radius: 40px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.05);
   }
-}
 
-/* Hide scrollbar for tab containers */
-.custom-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.custom-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+  .brand-card, .cartoon-card {
+    background: #FFFFFF;
+    border-radius: 24px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+    transition: all 0.2s ease;
+  }
 
-@layer utilities {
+  .cartoon-card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    border-color: #CBD5E1;
+  }
+
+  /* Deep Navy Action Button - Identical to Reference Button */
+  .btn-navy {
+    background: #234289;
+    color: #FFFFFF;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    border: 1px solid #1A336B;
+    box-shadow: 0 8px 20px -4px rgba(35, 66, 137, 0.35);
+    transition: all 0.2s ease;
+  }
+  .btn-navy:hover {
+    background: #1B326B;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px -4px rgba(35, 66, 137, 0.45);
+  }
+  .btn-navy:active {
+    transform: translateY(1px);
+  }
+
+  /* Secondary Button */
+  .btn-secondary-clean {
+    background: #F8FAFC;
+    color: #0F172A;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    border: 1px solid #E2E8F0;
+    transition: all 0.2s ease;
+  }
+  .btn-secondary-clean:hover {
+    background: #EEF2F6;
+    border-color: #CBD5E1;
+  }
+
+  /* Micro animations */
   .animate-fade-in {
-    animation: fadeIn 0.3s ease-out forwards;
-  }
-  
-  .animate-bounce-subtle {
-    animation: bounceSubtle 2s infinite ease-in-out;
-  }
-  
-  .pb-safe {
-    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes bounceSubtle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+.leaflet-container {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  border-radius: 20px;
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { MapPin, ArrowRight } from 'lucide-react';
+import { MapPin, ArrowRight, Train, Clock, ArrowDownUp, Calendar, Compass } from 'lucide-react';
 import AutocompleteInput from '../components/AutocompleteInput';
 import toast from 'react-hot-toast';
 
@@ -14,156 +14,330 @@ const Search = () => {
   const [source, setSource] = useState(sourceParam);
   const [destination, setDestination] = useState(destParam);
   const [trains, setTrains] = useState([]);
+  const [fromStation, setFromStation] = useState(null);
+  const [toStation, setToStation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
   useEffect(() => {
     if (sourceParam && destParam) {
-      handleSearch();
+      setSource(sourceParam);
+      setDestination(destParam);
+      performSearch(sourceParam, destParam);
     }
   }, [sourceParam, destParam]);
 
-  const handleSearch = async (e) => {
-    if(e) e.preventDefault();
-    if(!source || !destination) {
-      toast.error('Please enter both source and destination');
+  const performSearch = async (fromVal, toVal) => {
+    const src = fromVal || source;
+    const dst = toVal || destination;
+
+    if (!src || !dst) {
+      toast.error('Please enter both source and destination stations');
       return;
     }
     
-    setSearchParams({ source, destination });
     setLoading(true);
-    
     try {
-      const res = await axios.get(`http://localhost:5000/api/trains/search?source=${source.toUpperCase()}&destination=${destination.toUpperCase()}`);
-      setTrains(res.data.data);
-      setSearched(true);
+      const res = await axios.get(
+        `http://localhost:5000/api/trains/search?source=${encodeURIComponent(src)}&destination=${encodeURIComponent(dst)}`
+      );
       
+      const payload = res.data?.data;
+      const trainList = Array.isArray(payload) ? payload : (payload?.trains || []);
+      
+      setTrains(trainList);
+      setFromStation(payload?.from || null);
+      setToStation(payload?.to || null);
+      setSearched(true);
     } catch (err) {
-      toast.error('Failed to fetch trains');
+      toast.error(err.response?.data?.error?.message || 'Failed to search trains');
       console.error(err);
+      setTrains([]);
+      setSearched(true);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (!source || !destination) {
+      toast.error('Please enter both source and destination');
+      return;
+    }
+    setSearchParams({ source, destination });
+    performSearch(source, destination);
+  };
+
+  const handleSwap = () => {
+    const temp = source;
+    setSource(destination);
+    setDestination(temp);
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-32">
-      <div className="brand-card p-6 mb-8 backdrop-blur-md">
-        <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-end">
-          <div className="flex-1 w-full">
-            <label htmlFor="source" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Source Station (Code)</label>
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 pb-28">
+      
+      {/* Top Search Filter Box */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-4 sm:p-5 mb-6 shadow-sm">
+        <form onSubmit={handleSearchSubmit} className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-stretch lg:items-end">
+          
+          {/* Source */}
+          <div className="flex-1 w-full bg-slate-50 border border-slate-200/90 rounded-2xl p-2.5">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Origin Station (Name or Code)
+            </label>
             <AutocompleteInput 
               type="station"
               value={source}
               onChange={setSource}
-              placeholder="Enter Station Code (e.g. NDLS)"
+              placeholder="e.g. New Delhi or NDLS"
             />
           </div>
-          <div className="flex-1 w-full">
-            <label htmlFor="destination" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Destination Station (Code)</label>
+
+          {/* Swap */}
+          <div className="self-center -my-2 lg:my-0 lg:self-end pb-1 z-10">
+            <button
+              type="button"
+              onClick={handleSwap}
+              className="p-2.5 sm:p-3 rounded-full lg:rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 shadow-sm transition-all active:scale-95 cursor-pointer"
+              title="Swap Stations"
+            >
+              <ArrowDownUp className="w-4 h-4 stroke-[2.5]" />
+            </button>
+          </div>
+
+          {/* Destination */}
+          <div className="flex-1 w-full bg-slate-50 border border-slate-200/90 rounded-2xl p-2.5">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-blue-600"></span> Destination Station (Name or Code)
+            </label>
             <AutocompleteInput 
               type="station"
               value={destination}
               onChange={setDestination}
-              placeholder="Enter Station Code (e.g. HWH)"
+              placeholder="e.g. Mumbai Central or MMCT"
             />
           </div>
-          <button type="submit" disabled={loading} className="w-full md:w-auto px-8 py-3 border border-transparent text-base font-bold rounded-xl text-white bg-primary hover:bg-primary-hover disabled:bg-primary/50 transition-all shadow-md active:scale-95">
-            {loading ? 'Searching...' : 'Search'}
+
+          {/* Search Button */}
+          <button 
+            type="submit" 
+            disabled={loading} 
+            className="btn-navy w-full lg:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-md active:scale-95"
+          >
+            <span>{loading ? 'Searching...' : 'Search Trains'}</span>
+            <ArrowRight className="w-4 h-4 stroke-[3]" />
           </button>
         </form>
       </div>
 
+      {/* Loading Spinner */}
       {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="flex flex-col justify-center items-center py-20 gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white animate-bounce shadow-md">
+            <Train className="w-6 h-6 stroke-[2.5]" />
+          </div>
+          <p className="font-display font-black text-slate-700 text-lg">Finding direct trains...</p>
         </div>
       ) : searched ? (
         <div>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold font-display text-gray-900 dark:text-white">
-              <span className="text-primary">{source.toUpperCase()}</span> to <span className="text-secondary">{destination.toUpperCase()}</span>
-            </h2>
-            <span className="text-sm font-medium px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full">
-              {trains.length} trains found
-            </span>
+          {/* Header Bar */}
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6 bg-white border border-slate-200/90 p-5 rounded-2xl shadow-sm">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 font-display">Route Results</span>
+              <h2 className="text-xl sm:text-2xl font-black font-display text-slate-900 flex items-center gap-2 flex-wrap">
+                <span>{fromStation ? `${fromStation.name} (${fromStation.code})` : source}</span>
+                <span className="text-slate-400">➔</span>
+                <span>{toStation ? `${toStation.name} (${toStation.code})` : destination}</span>
+              </h2>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black bg-slate-100 text-slate-800 border border-slate-200 px-3.5 py-1.5 rounded-full">
+                {trains.length} {trains.length === 1 ? 'train' : 'trains'} available
+              </span>
+            </div>
           </div>
           
+          {/* Results List */}
           {trains.length === 0 ? (
-            <div className="text-center py-16 brand-card">
-              <MapPin className="mx-auto h-12 w-12 text-gray-400 mb-4 animate-bounce-subtle" />
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">No trains found</h3>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Try adjusting your search criteria or station codes.</p>
+            <div className="text-center py-16 bg-white rounded-3xl border border-slate-200/90 p-8 shadow-sm">
+              <div className="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto mb-4">
+                <MapPin className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-black text-slate-800 font-display">No direct trains found</h3>
+              <p className="mt-2 text-sm text-slate-500 font-medium max-w-sm mx-auto">
+                No direct trains were found between these stations. Try searching major junctions like New Delhi (NDLS), Mumbai Central (MMCT), Howrah (HWH), or Bangalore (SBC).
+              </p>
             </div>
           ) : (
-            <div className="grid gap-6">
-              {trains.map((train) => {
+            <div className="grid gap-4">
+              {trains.map((item, idx) => {
+                const trainNum = item.trainNumber || item.train?.number || item.number;
+                const trainName = item.trainName || item.train?.name || item.name;
+                const trainType = item.type || item.train?.type || 'Superfast Express';
+                const runDays = item.runningDays || item.train?.runDays || [];
+                const depTime = item.departure || item.from?.departure || '--:--';
+                const arrTime = item.arrival || item.to?.arrival || '--:--';
+                const srcCode = item.source || item.from?.code || '';
+                const dstCode = item.destination || item.to?.code || '';
+                const dur = item.duration || '--';
+                const dist = item.distance || '';
+
                 return (
-                <div 
-                  key={train.trainNumber} 
-                  className="brand-card relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/30 hover:-translate-y-1"
-                >
-                  <div className="p-6">
-                    <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
+                  <div 
+                    key={`${trainNum}-${idx}`} 
+                    className="bg-white rounded-2xl border border-slate-200/80 p-5 hover:border-slate-300 hover:shadow-md transition-all"
+                  >
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                       
-                      {/* Train Info */}
-                      <div className="flex items-start gap-4 w-full xl:w-auto">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-3 mb-2">
-                            <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-bold rounded-full border border-primary/20">
-                              {train.trainNumber}
+                      {/* Left: Train Meta */}
+                      <div className="w-full lg:w-1/3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-mono text-xs font-black px-3 py-1 rounded-xl bg-slate-900 text-white">
+                            #{trainNum}
+                          </span>
+                          <span className="text-[11px] font-black uppercase tracking-wider text-blue-900 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-lg">
+                            {trainType}
+                          </span>
+                        </div>
+                        
+                        <h3 className="text-lg font-black font-display text-slate-900 leading-snug">
+                          {trainName}
+                        </h3>
+                        
+                        <div className="flex items-center text-xs font-bold text-slate-500 gap-1.5 mt-2 flex-wrap">
+                          <span>Runs on:</span>
+                          <span className="text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md font-mono text-[11px]">
+                            {Array.isArray(runDays) && runDays.length > 0 ? runDays.join(', ') : 'All Days'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Center: Journey Timeline */}
+                      <div className="w-full lg:flex-1 bg-slate-50 border border-slate-200/80 px-6 py-4 rounded-2xl flex items-center justify-between gap-4">
+                        
+                        {/* Departure */}
+                        <div className="text-center min-w-[70px]">
+                          <p className="text-2xl font-black font-display text-slate-900 tracking-tight">{depTime}</p>
+                          <p className="text-xs font-black text-slate-500 uppercase tracking-wider mt-0.5">{srcCode}</p>
+                        </div>
+                        
+                        {/* Visual Line */}
+                        <div className="flex flex-col items-center flex-1 max-w-[220px]">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-slate-500" /> {dur}
+                          </span>
+                          
+                          <div className="w-full flex items-center relative">
+                            <div className="h-2.5 w-2.5 rounded-full bg-slate-900 shrink-0"></div>
+                            <div className="h-0.5 flex-1 bg-slate-300 rounded-full mx-1"></div>
+                            <div className="h-2.5 w-2.5 rounded-full bg-blue-700 shrink-0"></div>
+                          </div>
+
+                          {dist && (
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5">
+                              {dist}
                             </span>
-                            <h3 className="text-lg font-bold font-display text-gray-900 dark:text-white">{train.trainName}</h3>
-                          </div>
-                          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 gap-2 mt-2">
-                            <span className="font-semibold">Runs On:</span>
-                            <span className="font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{train.runningDays.join(', ')}</span>
-                          </div>
+                          )}
+                        </div>
+                        
+                        {/* Arrival */}
+                        <div className="text-center min-w-[70px]">
+                          <p className="text-2xl font-black font-display text-slate-900 tracking-tight">{arrTime}</p>
+                          <p className="text-xs font-black text-blue-900 uppercase tracking-wider mt-0.5">{dstCode}</p>
                         </div>
                       </div>
                       
-                      {/* Timeline */}
-                      <div className="w-full xl:w-auto flex-1 flex items-center justify-between xl:justify-center gap-2 md:gap-8 bg-gray-50 dark:bg-slate-800/50 px-4 md:px-8 py-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                        <div className="text-center min-w-[80px]">
-                          <p className="text-2xl font-bold font-display text-primary">{train.departure}</p>
-                          <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">{train.source}</p>
-                        </div>
-                        
-                        <div className="flex flex-col items-center flex-1 max-w-[200px]">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{train.duration}</span>
-                          <div className="w-full flex items-center">
-                            <div className="h-2 w-2 rounded-full bg-primary"></div>
-                            <div className="h-0.5 flex-1 bg-gradient-to-r from-primary to-secondary"></div>
-                            <div className="h-2 w-2 rounded-full bg-secondary"></div>
-                          </div>
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">{train.distance}</span>
-                        </div>
-                        
-                        <div className="text-center min-w-[80px]">
-                          <p className="text-2xl font-bold font-display text-secondary">{train.arrival}</p>
-                          <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">{train.destination}</p>
-                        </div>
-                      </div>
-                      
-                      {/* Action */}
-                      <div className="w-full xl:w-auto flex-shrink-0">
+                      {/* Right: Actions */}
+                      <div className="w-full lg:w-auto shrink-0 flex flex-col sm:flex-row lg:flex-col gap-2">
                         <Link 
-                          to={`/train/${train.trainNumber}`} 
-                          className="flex items-center justify-center w-full px-8 py-3 bg-white dark:bg-gray-800 text-primary border-2 border-primary/20 hover:border-primary font-bold rounded-xl hover:bg-primary/5 transition-all"
+                          to={`/train/${trainNum}?view=live`} 
+                          className="btn-navy px-6 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 text-center"
                         >
-                          Details
+                          <Train className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>SPOT LIVE</span>
+                        </Link>
+                        
+                        <Link 
+                          to={`/train/${trainNum}?view=seats`} 
+                          className="btn-secondary-clean px-6 py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1 text-center"
+                        >
+                          <span>SEATS & FARE</span>
                         </Link>
                       </div>
-                      
+
                     </div>
                   </div>
-                </div>
-              )})}
+                );
+              })}
             </div>
           )}
-          
+
         </div>
-      ) : null}
+      ) : (
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-8 shadow-sm">
+          <div className="mb-6">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 font-display block">
+              POPULAR DIRECT TRAVEL CORRIDORS
+            </span>
+            <h3 className="text-xl sm:text-2xl font-black font-display text-slate-900 mt-1">
+              Top Indian Railway Routes
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 font-bold mt-1">
+              Select any corridor below to instantly find direct express trains and schedules.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { from: 'NDLS', to: 'MMCT', label: 'Delhi ➔ Mumbai', time: '16h 45m', trains: 'Rajdhani / SF' },
+              { from: 'MMCT', to: 'NDLS', label: 'Mumbai ➔ Delhi', time: '16h 50m', trains: 'Tejas / Exp' },
+              { from: 'SBC', to: 'MAS', label: 'Bangalore ➔ Chennai', time: '12h 20m', trains: 'Shatabdi / Exp' },
+              { from: 'HWH', to: 'NDLS', label: 'Kolkata ➔ Delhi', time: '22h 10m', trains: 'Duronto / Rajdhani' },
+              { from: 'NDLS', to: 'BSB', label: 'Delhi ➔ Varanasi', time: '8h 00m', trains: 'Vande Bharat' },
+              { from: 'PUNE', to: 'CSMT', label: 'Pune ➔ Mumbai', time: '3h 15m', trains: 'Deccan Queen' },
+              { from: 'MAS', to: 'SBC', label: 'Chennai ➔ Bangalore', time: '5h 00m', trains: 'Vande Bharat' },
+              { from: 'NDLS', to: 'LJN', label: 'Delhi ➔ Lucknow', time: '6h 30m', trains: 'Swarna Shatabdi' },
+            ].map((r, i) => (
+              <div
+                key={i}
+                onClick={() => {
+                  setSource(r.from);
+                  setDestination(r.to);
+                  setSearchParams({ source: r.from, destination: r.to });
+                  performSearch(r.from, r.to);
+                }}
+                className="bg-slate-50 hover:bg-white border border-slate-200/80 hover:border-slate-300 rounded-2xl p-4 transition-all hover:shadow-md cursor-pointer group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-xs font-black text-slate-400 mb-2">
+                    <span className="font-mono bg-white border border-slate-200 px-2 py-0.5 rounded-md text-slate-700">
+                      {r.from} ➔ {r.to}
+                    </span>
+                    <span>{r.time}</span>
+                  </div>
+                  <h4 className="font-display font-black text-base text-slate-900 group-hover:text-blue-900 transition-colors">
+                    {r.label}
+                  </h4>
+                  <p className="text-[11px] font-bold text-slate-400 mt-1">
+                    {r.trains}
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs font-black text-blue-900">
+                  <span>View Trains</span>
+                  <div className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:translate-x-0.5 transition-all">
+                    <ArrowRight className="w-3 h-3 stroke-[2.5]" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
